@@ -1,5 +1,4 @@
 /*
- * @Name : ftm - Franklin's Task Manager
  * @Author: Alexey 'l1feh4ck3r' Antonov
  */
 

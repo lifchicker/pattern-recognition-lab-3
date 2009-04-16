@@ -4,6 +4,10 @@
 #include <QMainWindow>
 #include "ui_mainwindow.h"
 
+class QPainterPath;
+class QMouseEvent;
+class QPoint;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -13,19 +17,23 @@ public:
     ~MainWindow();
 
 private slots:
-    void calculateValues();
+    void calculate_values();
     void draw();
     void generate();
     void load();
 
 private:
     double drand();
+    void draw_ellipse(QPainterPath &path, double p);
     void generate__a__();
-    void generateNormalVector(double * vec);
-    void generateVector(double * vec);
+    void generate_normal_vector(double * vec);
+    void generate_vector(double * vec);
 
-    double plotX(double x);
-    double plotY(double y);
+    double plot_x(double x);
+    double plot_y(double y);
+
+    double calculate_y1(double x, double p);
+    double calculate_y2(double x, double p);
 
     //input data (from file or consol)
     int m;  //dimention of X
@@ -39,8 +47,13 @@ private:
     bool inputDataLoaded;
 
     Ui::MainWindowClass ui;
-    double shiftx;
-    double shifty;
+    double kxy;
+    double middleX;
+    double middleY;
+    double shiftX;
+    double shiftY;
+    double sigmaX;
+    double sigmaY;
 };
 
 #endif // MAINWINDOW_H

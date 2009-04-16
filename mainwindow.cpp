@@ -8,16 +8,21 @@
 MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags),
     m(0), a(NULL), b(NULL), __a__(NULL), x(NULL), selectionSize(100),
-    inputDataLoaded(false), shiftx(0.0), shifty(0.0)
+    inputDataLoaded(false), kxy(0.0), middleX(0.0), middleY(0.0), shiftX(10.0), shiftY(10.0),
+    sigmaX(0.0), sigmaY(0.0)
 {
     ui.setupUi(this);
 
     connect(ui.loadButton, SIGNAL(clicked()), this, SLOT(load()));
     connect(ui.generateButton, SIGNAL(clicked()), this, SLOT(generate()));
-    //connect(ui.drawButton, SIGNAL(clicked()), this, SLOT(calculateValues()));
-    connect(ui.drawButton, SIGNAL(clicked()), this, SLOT(draw()));
-    connect(ui.zoom, SIGNAL(sliderReleased()), this, SLOT(draw()));
-    connect(ui.component1, SIGNAL(editingFinished()), this, SLOT(calculateValues()));
+    connect(ui.drawButton, SIGNAL(clicked()), this, SLOT(calculate_values()));
+    //connect(ui.drawButton, SIGNAL(clicked()), this, SLOT(draw()));
+    connect(ui.zoomX, SIGNAL(sliderReleased()), this, SLOT(draw()));
+    connect(ui.zoomY, SIGNAL(sliderReleased()), this, SLOT(draw()));
+    connect(ui.component1, SIGNAL(editingFinished()), this, SLOT(calculate_values()));
+    connect(ui.component2, SIGNAL(editingFinished()), this, SLOT(calculate_values()));
+
+    srand(QTime::currentTime().elapsed());
 }
 
 MainWindow::~MainWindow()
@@ -47,7 +52,7 @@ MainWindow::~MainWindow()
     }
 }
 
-void MainWindow::calculateValues()
+void MainWindow::calculate_values()
 {
     if (!inputDataLoaded)
         return;
@@ -55,41 +60,74 @@ void MainWindow::calculateValues()
     int vec1 = ui.component1->value();
     int vec2 = ui.component2->value();
 
-    double middlex = 0.0;
-    double middley = 0.0;
-    for (int i = 0; i < selectionSize; i++)
+    middleX = 0.0;
+    middleY = 0.0;
+    for (int i = 0; i < selectionSize; ++i)
     {
-        middlex += x[i][vec1];
-        middley += x[i][vec2];
+        middleX += x[i][vec1];
+        middleY += x[i][vec2];
     }
-    middlex /= selectionSize;
-    middley /= selectionSize;
+    middleX /= static_cast<double>(selectionSize);
+    middleY /= static_cast<double>(selectionSize);
 
-    ui.labelMiddleX->setText(QString("%1").arg(middlex));
-    ui.labelMiddleY->setText(QString("%1").arg(middley));
+    ui.labelMiddleX->setText(QString("%1").arg(middleX));
+    ui.labelMiddleY->setText(QString("%1").arg(middleY));
 
-
-    double sigmax = 0.0;
-    double sigmay = 0.0;
-    double kxy = 0.0;
-    for (int i = 0; i < selectionSize; i++)
+    sigmaX = 0.0;
+    sigmaY = 0.0;
+    kxy = 0.0;
+    for (int i = 0; i < selectionSize; ++i)
     {
-        sigmax += (x[i][vec1] - middlex)*(x[i][vec1] - middlex);
-        sigmay += (x[i][vec2] - middley)*(x[i][vec2] - middley);
-        kxy += (x[i][vec1] - middlex)*(x[i][vec2] - middley);
+        sigmaX += (x[i][vec1] - middleX)*(x[i][vec1] - middleX);
+        sigmaY += (x[i][vec2] - middleY)*(x[i][vec2] - middleY);
+        kxy += (x[i][vec1] - middleX)*(x[i][vec2] - middleY);
     }
-    sigmax /= selectionSize;
-    sigmay /= selectionSize;
+    sigmaX /= selectionSize;
+    sigmaY /= selectionSize;
     kxy /= selectionSize;
 
-    sigmax = sqrt(sigmax);
-    sigmay = sqrt(sigmay);
+    sigmaX = sqrt(sigmaX);
+    sigmaY = sqrt(sigmaY);
 
-    ui.labelSigmaX->setText(QString("%1").arg(sigmax));
-    ui.labelSigmaY->setText(QString("%1").arg(sigmay));
+    ui.labelSigmaX->setText(QString("%1").arg(sigmaX));
+    ui.labelSigmaY->setText(QString("%1").arg(sigmaY));
     ui.labelKxy->setText(QString("%1").arg(kxy));
 
     draw();
+}
+
+double MainWindow::calculate_y1(double x, double p)
+{
+    double r = kxy/(sigmaX*sigmaY);
+    double sx2 = sigmaX*sigmaX;
+    double sy2 = sigmaY*sigmaY;
+    
+    double lambdad = 2.0*(1.0 - r*r)*log(2.0*M_PI*sigmaX*sigmaY*sqrt(1.0 - r*r)*p);
+    //if (lambdad < 0.0)
+    //    lambdad = 0.0 - lambdad;
+
+    return (r*sigmaY*x + sigmaX*middleY - r*sigmaY*middleX +
+            sqrt(r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
+                 r*r*sy2*middleX*middleX - sy2*x*x +
+                 2.0*sy2*x*middleX - sy2*middleX*middleX +
+                 lambdad*sx2*sy2)
+            )/sx2;
+}
+
+double MainWindow::calculate_y2(double x, double p)
+{
+    double r = kxy/(sigmaX*sigmaY);
+    double sx2 = sigmaX*sigmaX;
+    double sy2 = sigmaY*sigmaY;
+
+    double lambdad = -2.0*(1.0 - r*r)*log(2.0*M_PI*sigmaX*sigmaY*sqrt(1.0 - r*r)*p);
+
+    return (r*sigmaY*x + sigmaX*middleY - r*sigmaY*middleX -
+            sqrt(r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
+                 r*r*sy2*middleX*middleX - sy2*x*x +
+                 2.0*sy2*x*middleX - sy2*middleX*middleX +
+                 lambdad*sx2*sy2)
+            )/sx2;
 }
 
 double MainWindow::drand()
@@ -99,28 +137,56 @@ double MainWindow::drand()
 
 void MainWindow::draw()
 {
+    int vec1 = ui.component1->value();
+    int vec2 = ui.component2->value();
+
+    shiftX = 1.0;
+    shiftY = 7.0;
     QPen pen;
     //pen.setBrush(QBrush(QColor(255, 0, 0, 255), Qt::SolidPattern));
     pen.setColor(QColor(255, 0, 0, 255));
-    pen.setWidth(10);
+    pen.setWidth(1);
     QGraphicsScene * scene = new QGraphicsScene(ui.graphicsView->rect(), this);
 
-    scene->addLine(plotX(0.0), plotY(0.0), plotX(100.0), plotY(100.0), pen);
-    scene->addLine(0.0, 0.0, 100.0, 100.0, pen);
+    scene->addLine(plot_x(0.0), plot_y(0.0), plot_x(1.0), plot_y(0.0), pen);
+    scene->addLine(plot_x(0.0), plot_y(0.0), plot_x(0.0), plot_y(1.0), pen);
 
-/*
-        for (int i = 0; i < points.size()-1; i++)
-        {
-                scene->addLine(points[i]._x*780.0+10.0, 290.0-points[i]._y*280.0, points[i+1]._x*780.0+10.0, 290.0-points[i+1]._y*280.0, pen);
-        }
-        scene->setBackgroundBrush(QBrush(QColor(0, 255, 0, 255)));
+    scene->addLine(plot_x(middleX), plot_y(middleY), plot_x(middleX)+1.0, plot_y(middleY)+1.0, pen);
 
-        return scene;
-*/
+    for (int i = 0; i < selectionSize; ++i)
+        scene->addLine(plot_x(x[i][vec1]), plot_y(x[i][vec2]), plot_x(x[i][vec1])+1.0, plot_y(x[i][vec2])+1.0, pen);
+
+    QPainterPath path1;
+    QPainterPath path2;
+    QPainterPath path3;
+    draw_ellipse(path1, 0.2);
+    scene->addPath(path1, pen);
+    draw_ellipse(path2, 0.6);
+    scene->addPath(path2, pen);
+    draw_ellipse(path3, 1.0);
+    scene->addPath(path3, pen);
 
     scene->setBackgroundBrush(QBrush(QColor(0, 255, 0, 255)));
     ui.graphicsView->setScene(scene);
     ui.graphicsView->show();
+}
+
+void MainWindow::draw_ellipse(QPainterPath &path, double p)
+{
+    double y = plot_y(calculate_y1(0.0, p));
+    path.moveTo(plot_x(0.0), y);
+
+    for (int i = 0; i <= 100; ++i)
+    {
+        double currentx = 100.0/static_cast<double>(i);
+        path.lineTo(plot_x(currentx), plot_y(calculate_y1(currentx, p)));
+    }
+
+    for (int i = 100; i >= 0; --i)
+    {
+        double currentx = 100.0/static_cast<double>(i);
+        path.lineTo(plot_x(currentx), plot_y(calculate_y2(currentx, p)));
+    }
 }
 
 void MainWindow::generate()
@@ -138,10 +204,10 @@ void MainWindow::generate()
 
     x = new double*[selectionSize];
 
-    for (int i = 0; i < selectionSize; i++)
+    for (int i = 0; i < selectionSize; ++i)
     {
         x[i] = new double[m];
-        generateVector(x[i]);
+        generate_vector(x[i]);
     }
 
     ui.component1->setMaximum(ui.selectionDimention->value());
@@ -159,56 +225,72 @@ void MainWindow::generate__a__()
 
 //may be need refactor
     __a__ = new double*[m];
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < m; ++i)
     {
         __a__[i] = new double[m];
         memset(__a__[i], 0, sizeof(double)*m);
     }
 
-    for (int i = 0; i < m; i++)
-        for (int j = 0; j <= i; j++)
+    for (int i = 0; i < m; ++i)
+        for (int j = 0; j <= i; ++j)
         {
             double sum1 = 0.0;
-            for (int k = 0; k < j; k++)
+            for (int k = 0; k < j; ++k)
                 sum1 += __a__[i][k]*__a__[j][k];
 
             double sum2 = 0.0;
-            for (int k = 0; k < j; k++)
+            for (int k = 0; k < j; ++k)
                 sum2 += __a__[j][k]*__a__[j][k];
+
+            if ((b[j][j] - sum2) <= 0.0)
+            {
+                QMessageBox::critical(this, tr("Generation ||A|| failed"),
+                                      tr("Invalid matrix of correlations!"),
+                                      QMessageBox::Ok);
+                delete[] __a__;
+                __a__ = NULL;
+                return;
+            }
 
             __a__[i][j] = (b[i][j] - sum1)/sqrt(b[j][j] - sum2);
         }
 }
 
 // generate random verctor with normal distribution
-void MainWindow::generateNormalVector(double * vec)
+void MainWindow::generate_normal_vector(double * vec)
 {
     if (!vec)
         return;
 
-    srand(QTime::currentTime().elapsed());
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < m; ++i)
         vec[i] = drand();
 }
 
 // generate random vector with predefined partition law
-void MainWindow::generateVector(double * vec)
+void MainWindow::generate_vector(double * vec)
 {
     if (!vec)
         return;
 
     double * nv = new double[m];
-    generateNormalVector(nv);
+    generate_normal_vector(nv);
 
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < m; ++i)
     {
         double stringSum = 0.0;
-        for (int j = 0; j < m; j++)
+        for (int j = 0; j < m; ++j)
             stringSum += __a__[i][j]*nv[j];
         vec[i] = stringSum + a[i];
     }
 
     delete[] nv;
+
+    std::fstream file;
+    file.open("./log.txt", std::ios_base::out | std::ios_base::app );
+    for (int i = 0; i < m; i++)
+        file << nv[i] << " ";
+    file << std::endl;
+    file.close();
 }
 
 void MainWindow::load()
@@ -238,15 +320,15 @@ void MainWindow::load()
 
     //create vector of average values and fill them by values from file
     a = new double[m];
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < m; ++i)
         in >> a[i];
 
     //create matrix of collerations and fill them by values from file
     b = new double*[m];
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < m; ++i)
     {
         b[i] = new double[m];
-        for (int j = 0; j < m; j++)
+        for (int j = 0; j < m; ++j)
             in >> b[i][j];
     }
 
@@ -257,18 +339,18 @@ void MainWindow::load()
     inputDataLoaded = true;
 }
 
-double MainWindow::plotX(double x)
+double MainWindow::plot_x(double x)
 {
-    if (ui.zoom->value() > 70)
-        return x*((static_cast<double>(ui.zoom->value()) - 65.0)/5.0) + shiftx;  //zoom in
+    if (ui.zoomX->value() > 70)
+        return x*((static_cast<double>(ui.zoomX->value()) - 65.0)/5.0)*(ui.graphicsView->width() - shiftX) + shiftX;  //zoom in
     else
-        return x*(static_cast<double>(ui.zoom->value())/70.0) + shiftx;    //zoom out
+        return x*(static_cast<double>(ui.zoomX->value())/70.0)*(ui.graphicsView->width() - shiftX) + shiftX;    //zoom out
 }
 
-double MainWindow::plotY(double y)
+double MainWindow::plot_y(double y)
 {
-    if (ui.zoom->value() > 70)
-        return static_cast<double>(ui.graphicsView->height()) - y*((static_cast<double>(ui.zoom->value()) - 65.0)/5.0) - shifty;
+    if (ui.zoomY->value() > 70)
+        return static_cast<double>(ui.graphicsView->height()) - y*((static_cast<double>(ui.zoomY->value()) - 65.0)/5.0)*(ui.graphicsView->height() - shiftY) - shiftY;
     else
-        return static_cast<double>(ui.graphicsView->height()) - y*(static_cast<double>(ui.zoom->value())/70.0) - shifty;
+        return static_cast<double>(ui.graphicsView->height()) - y*(static_cast<double>(ui.zoomY->value())/70.0)*(ui.graphicsView->height() - shiftY) - shiftY;
 }

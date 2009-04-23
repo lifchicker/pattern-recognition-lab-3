@@ -129,7 +129,7 @@ double MainWindow::calculate_y1(double x, double p)
     double sx2 = sigmaX*sigmaX;
     double sy2 = sigmaY*sigmaY;
     
-    double lambdad = fabs(2.0*(1.0 - r*r)*log(2.0*M_PI*sigmaX*sigmaY*sqrt(1.0 - r*r)*p));
+    double lambdad = -log(p);//fabs(2.0*(1.0 - r*r)*log(2.0*M_PI*sigmaX*sigmaY*sqrt(1.0 - r*r)*p));
 
 //    qDebug() << "f=" << (r*sigmaY*x + sigmaX*middleY - r*sigmaY*middleX)
 //            << " s1=" << r*r*sy2*x*x
@@ -146,10 +146,10 @@ double MainWindow::calculate_y1(double x, double p)
 
 
     return (r*sigmaY*x + sigmaX*middleY - r*sigmaY*middleX +
-            sqrt(fabs(r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
+            sqrt(r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
                  r*r*sy2*middleX*middleX - sy2*x*x +
                  2.0*sy2*x*middleX - sy2*middleX*middleX +
-                 lambdad*sx2*sy2))
+                 lambdad*sx2*sy2)
             )/sigmaX;
 }
 
@@ -158,13 +158,13 @@ double MainWindow::calculate_y2(double x, double p)
     double sx2 = sigmaX*sigmaX;
     double sy2 = sigmaY*sigmaY;
 
-    double lambdad = fabs(2.0*(1.0 - r*r)*log(2.0*M_PI*sigmaX*sigmaY*sqrt(1.0 - r*r)*p));
+    double lambdad = -log(p);//fabs(2.0*(1.0 - r*r)*log(2.0*M_PI*sigmaX*sigmaY*sqrt(1.0 - r*r)*p));
 
     return (r*sigmaY*x + sigmaX*middleY - r*sigmaY*middleX -
-            sqrt(fabs(r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
+            sqrt(r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
                  r*r*sy2*middleX*middleX - sy2*x*x +
                  2.0*sy2*x*middleX - sy2*middleX*middleX +
-                 lambdad*sx2*sy2))
+                 lambdad*sx2*sy2)
             )/sigmaX;
 }
 
@@ -213,11 +213,14 @@ void MainWindow::draw()
     pen.setColor(QColor(0, 0, 255, 255));
     pen.setWidth(1);
     QPainterPath path1;
-    draw_ellipse(path1, 0.1);
+    QPainterPath path2;
+    QPainterPath path3;
     draw_ellipse(path1, 0.3);
-    draw_ellipse(path1, 0.6);
-    draw_ellipse(path1, 1.0);
+    draw_ellipse(path2, 0.6);
+    draw_ellipse(path3, 0.9);
     scene->addPath(path1, pen);
+    scene->addPath(path2, pen);
+    scene->addPath(path3, pen);
 
     scene->setBackgroundBrush(QBrush(QColor(0, 255, 0, 255)));
     ui.graphicsView->setScene(scene);
@@ -231,20 +234,32 @@ void MainWindow::draw_ellipse(QPainterPath &path, double p)
     width /= 100.0;
     double left = boundingRect.left();
 
-    double y = plot_y(calculate_y1(left, p));
-    path.moveTo(plot_x(left), y);
-
+    bool first = true;
     for (int i = 0; i <= 100; ++i)
     {
-        double currentx = left + static_cast<double>(i)*width;
-        path.lineTo(plot_x(currentx), plot_y(calculate_y1(currentx, p)));
+        double currentX = left + static_cast<double>(i)*width;
+        double currentY = calculate_y1(currentX, p);
+        if (first)
+        {
+            if (!(isnan(currentY) || isinf(currentY)))
+            {
+                path.moveTo(plot_x(currentX), plot_y(currentY));
+                first = false;
+            }
+        }
+        else
+            if (!(isnan(currentY) || isinf(currentY)))
+                path.lineTo(plot_x(currentX), plot_y(currentY));
     }
 
     for (int i = 100; i >= 0; --i)
     {
-        double currentx = left + static_cast<double>(i)*width;
-        path.lineTo(plot_x(currentx), plot_y(calculate_y2(currentx, p)));
+        double currentX = left + static_cast<double>(i)*width;
+        double currentY = calculate_y2(currentX, p);
+        if (!(isnan(currentY) || isinf(currentY)))
+            path.lineTo(plot_x(currentX), plot_y(currentY));
     }
+    path.connectPath(path);
 }
 
 void MainWindow::generate()
@@ -406,7 +421,7 @@ double MainWindow::plot_x(double x)
 //        return x*((static_cast<double>(ui.zoomX->value()) - 65.0)/5.0)*(ui.graphicsView->width() - shiftX) + shiftX;  //zoom in
 //    else
 //        return x*(static_cast<double>(ui.zoomX->value())/70.0)*(ui.graphicsView->width() - shiftX) + shiftX;    //zoom out
-    return x*static_cast<double>(ui.zoomX->value());
+    return x*static_cast<double>(ui.zoomX->value())*10.0;
 }
 
 double MainWindow::plot_y(double y)
@@ -415,5 +430,5 @@ double MainWindow::plot_y(double y)
 //        return static_cast<double>(ui.graphicsView->height()) - y*((static_cast<double>(ui.zoomY->value()) - 65.0)/5.0)*(ui.graphicsView->height() - shiftY) - shiftY;
 //    else
 //        return static_cast<double>(ui.graphicsView->height()) - y*(static_cast<double>(ui.zoomY->value())/70.0)*(ui.graphicsView->height() - shiftY) - shiftY;
-    return -y*static_cast<double>(ui.zoomY->value());
+    return -y*static_cast<double>(ui.zoomY->value())*10.0;
 }

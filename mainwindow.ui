@@ -39,10 +39,10 @@
      </rect>
     </property>
     <property name="verticalScrollBarPolicy">
-     <enum>Qt::ScrollBarAlwaysOff</enum>
+     <enum>Qt::ScrollBarAlwaysOn</enum>
     </property>
     <property name="horizontalScrollBarPolicy">
-     <enum>Qt::ScrollBarAlwaysOff</enum>
+     <enum>Qt::ScrollBarAlwaysOn</enum>
     </property>
    </widget>
    <widget class="QSlider" name="zoomY">
@@ -64,7 +64,7 @@
      <number>1</number>
     </property>
     <property name="value">
-     <number>70</number>
+     <number>1</number>
     </property>
     <property name="orientation">
      <enum>Qt::Vertical</enum>
@@ -215,9 +215,9 @@
     <property name="geometry">
      <rect>
       <x>440</x>
-      <y>280</y>
+      <y>260</y>
       <width>181</width>
-      <height>131</height>
+      <height>151</height>
      </rect>
     </property>
     <property name="title">
@@ -372,6 +372,35 @@ p, li { white-space: pre-wrap; }
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
+    <widget class="QLabel" name="label_9">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>120</y>
+       <width>57</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>r</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="labelR">
+     <property name="geometry">
+      <rect>
+       <x>86</x>
+       <y>120</y>
+       <width>81</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>0.0</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
    </widget>
    <widget class="QSlider" name="zoomX">
     <property name="geometry">
@@ -389,7 +418,7 @@ p, li { white-space: pre-wrap; }
      <number>100</number>
     </property>
     <property name="value">
-     <number>70</number>
+     <number>1</number>
     </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>

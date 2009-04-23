@@ -5,8 +5,8 @@
 #include "ui_mainwindow.h"
 
 class QPainterPath;
-class QMouseEvent;
-class QPoint;
+class QRectF;
+class QGraphicsScene;
 
 class MainWindow : public QMainWindow
 {
@@ -23,6 +23,7 @@ private slots:
     void load();
 
 private:
+    void calculate_bounding_rect(int vec1, int vec2);
     double drand();
     void draw_ellipse(QPainterPath &path, double p);
     void generate__a__();
@@ -54,6 +55,10 @@ private:
     double shiftY;
     double sigmaX;
     double sigmaY;
+    double r;
+
+    QRectF boundingRect;
+    QGraphicsScene * scene;
 };
 
 #endif // MAINWINDOW_H

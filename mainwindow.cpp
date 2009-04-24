@@ -19,6 +19,9 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
     //connect(ui.drawButton, SIGNAL(clicked()), this, SLOT(draw()));
     connect(ui.zoomX, SIGNAL(valueChanged(int)), this, SLOT(draw()));
     connect(ui.zoomY, SIGNAL(valueChanged(int)), this, SLOT(draw()));
+    connect(ui.checkBoxSelection, SIGNAL(stateChanged(int)), this, SLOT(draw()));
+    connect(ui.checkBoxMiddle, SIGNAL(stateChanged(int)), this, SLOT(draw()));
+    connect(ui.checkBoxIsolines, SIGNAL(stateChanged(int)), this, SLOT(draw()));
     connect(ui.component1, SIGNAL(editingFinished()), this, SLOT(calculate_values()));
     connect(ui.component2, SIGNAL(editingFinished()), this, SLOT(calculate_values()));
 
@@ -51,7 +54,7 @@ MainWindow::~MainWindow()
         x = NULL;
     }
 
-    if (scene)
+    if (scene != NULL)
     {
         delete scene;
         scene = NULL;
@@ -67,10 +70,13 @@ void MainWindow::calculate_bounding_rect(int vec1, int vec2)
     {
         if (x[i][vec1] < boundingRect.left())
             boundingRect.setLeft(x[i][vec1]);
+
         if (x[i][vec1] > boundingRect.right())
             boundingRect.setRight(x[i][vec1]);
+
         if (x[i][vec2] < boundingRect.bottom())
             boundingRect.setBottom(x[i][vec2]);
+
         if (x[i][vec2] >  boundingRect.top())
             boundingRect.setTop(x[i][vec2]);
     }
@@ -198,29 +204,38 @@ void MainWindow::draw()
     scene->addLine(plot_x(0.0), plot_y(0.0), plot_x(1.0), plot_y(0.0), pen);
     scene->addLine(plot_x(0.0), plot_y(0.0), plot_x(0.0), plot_y(1.0), pen);
 
-    //draw middle point
-    pen.setColor(QColor(0, 0, 255, 255));
-    pen.setWidth(3);
-    scene->addLine(plot_x(middleX), plot_y(middleY), plot_x(middleX), plot_y(middleY), pen);
-
     //draw all points
-    pen.setColor(QColor(255, 0, 0, 255));
-    pen.setWidth(2);
-    for (int i = 0; i < selectionSize; ++i)
-        scene->addLine(plot_x(x[i][vec1]), plot_y(x[i][vec2]), plot_x(x[i][vec1]), plot_y(x[i][vec2]), pen);
+    if (ui.checkBoxSelection->isChecked())
+    {
+        pen.setColor(QColor(255, 0, 0, 255));
+        pen.setWidth(2);
+        for (int i = 0; i < selectionSize; ++i)
+            scene->addLine(plot_x(x[i][vec1]), plot_y(x[i][vec2]), plot_x(x[i][vec1]), plot_y(x[i][vec2]), pen);
+    }
+
+    //draw middle point
+    if (ui.checkBoxMiddle->isChecked())
+    {
+        pen.setColor(QColor(0, 0, 255, 255));
+        pen.setWidth(3);
+        scene->addLine(plot_x(middleX), plot_y(middleY), plot_x(middleX), plot_y(middleY), pen);
+    }
 
     //draw isolines
-    pen.setColor(QColor(0, 0, 255, 255));
-    pen.setWidth(1);
-    QPainterPath path1;
-    QPainterPath path2;
-    QPainterPath path3;
-    draw_ellipse(path1, 0.3);
-    draw_ellipse(path2, 0.6);
-    draw_ellipse(path3, 0.9);
-    scene->addPath(path1, pen);
-    scene->addPath(path2, pen);
-    scene->addPath(path3, pen);
+    if (ui.checkBoxIsolines->isChecked())
+    {
+        pen.setColor(QColor(0, 0, 255, 255));
+        pen.setWidth(1);
+        QPainterPath path1;
+        QPainterPath path2;
+        QPainterPath path3;
+        draw_ellipse(path1, 0.3);
+        draw_ellipse(path2, 0.6);
+        draw_ellipse(path3, 0.9);
+        scene->addPath(path1, pen);
+        scene->addPath(path2, pen);
+        scene->addPath(path3, pen);
+    }
 
     scene->setBackgroundBrush(QBrush(QColor(0, 255, 0, 255)));
     ui.graphicsView->setScene(scene);
@@ -357,13 +372,6 @@ void MainWindow::generate_vector(double * vec)
     }
 
     delete[] nv;
-
-    std::fstream file;
-    file.open("./log.txt", std::ios_base::out | std::ios_base::app );
-    for (int i = 0; i < m; i++)
-        file << nv[i] << " ";
-    file << std::endl;
-    file.close();
 }
 
 void MainWindow::load()
@@ -375,14 +383,6 @@ void MainWindow::load()
         return;
 
     //open file
-/*
-    QFile file(filename);
-    file.open(QIODevice::ReadOnly);
-    if (!file.isOpen() || !file.isReadable())
-        return;
-
-    QDataStream in(&file);
-*/
     std::fstream in;
     in.open(filename.toAscii().data(), std::ios_base::in);
     if (!in.is_open())
@@ -417,18 +417,10 @@ void MainWindow::load()
 
 double MainWindow::plot_x(double x)
 {
-//    if (ui.zoomX->value() > 70)
-//        return x*((static_cast<double>(ui.zoomX->value()) - 65.0)/5.0)*(ui.graphicsView->width() - shiftX) + shiftX;  //zoom in
-//    else
-//        return x*(static_cast<double>(ui.zoomX->value())/70.0)*(ui.graphicsView->width() - shiftX) + shiftX;    //zoom out
     return x*static_cast<double>(ui.zoomX->value())*10.0;
 }
 
 double MainWindow::plot_y(double y)
 {
-//    if (ui.zoomY->value() > 70)
-//        return static_cast<double>(ui.graphicsView->height()) - y*((static_cast<double>(ui.zoomY->value()) - 65.0)/5.0)*(ui.graphicsView->height() - shiftY) - shiftY;
-//    else
-//        return static_cast<double>(ui.graphicsView->height()) - y*(static_cast<double>(ui.zoomY->value())/70.0)*(ui.graphicsView->height() - shiftY) - shiftY;
     return -y*static_cast<double>(ui.zoomY->value())*10.0;
 }

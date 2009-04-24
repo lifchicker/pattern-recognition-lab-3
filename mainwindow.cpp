@@ -138,20 +138,6 @@ double MainWindow::calculate_y1(double x, double p)
     
     double lambdad = -log(p);//fabs(2.0*(1.0 - r*r)*log(2.0*M_PI*sigmaX*sigmaY*sqrt(1.0 - r*r)*p));
 
-//    qDebug() << "f=" << (r*sigmaY*x + sigmaX*middleY - r*sigmaY*middleX)
-//            << " s1=" << r*r*sy2*x*x
-//            << " s2=" << 2.0*r*r*sy2*x*middleX
-//            << " s3=" << r*r*sy2*middleX*middleX
-//            << " s4=" << sy2*x*x
-//            << " s5=" << 2.0*sy2*x*middleX
-//            << " s6=" << sy2*middleX*middleX
-//            << " s7=" << lambdad*sx2*sy2
-//            << " sresult=" << (r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
-//                 r*r*sy2*middleX*middleX - sy2*x*x +
-//                 2.0*sy2*x*middleX - sy2*middleX*middleX +
-//                 lambdad*sx2*sy2);
-
-
     return (r*sigmaY*x + sigmaX*middleY - r*sigmaY*middleX +
             sqrt(r*r*sy2*x*x - 2.0*r*r*sy2*x*middleX +
                  r*r*sy2*middleX*middleX - sy2*x*x +
@@ -197,7 +183,8 @@ void MainWindow::draw()
     shiftY = 0.0;
     QPen pen;
 
-    scene = new QGraphicsScene(boundingRect, this);
+//    scene = new QGraphicsScene(boundingRect, this);
+    scene = new QGraphicsScene(this);
 
     //draw axies lines
     pen.setColor(QColor(0, 0, 0, 255));

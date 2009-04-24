@@ -21,6 +21,7 @@ private slots:
     void draw();
     void generate();
     void load();
+    void saveSelection();
 
 private:
     void calculate_bounding_rect(int vec1, int vec2);
@@ -46,6 +47,7 @@ private:
     double ** x;        //selection
     int selectionSize;
     bool inputDataLoaded;
+    bool selectionGenerated;
 
     Ui::MainWindowClass ui;
     double kxy;

@@ -8,8 +8,8 @@
 MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags),
     m(0), a(NULL), b(NULL), __a__(NULL), x(NULL), selectionSize(100),
-    inputDataLoaded(false), kxy(0.0), middleX(0.0), middleY(0.0), shiftX(10.0), shiftY(10.0),
-    sigmaX(0.0), sigmaY(0.0), r(0.0), scene(NULL)
+    inputDataLoaded(false), selectionGenerated(false), kxy(0.0), middleX(0.0), middleY(0.0),
+    shiftX(10.0), shiftY(10.0), sigmaX(0.0), sigmaY(0.0), r(0.0), scene(NULL)
 {
     ui.setupUi(this);
 
@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
     connect(ui.checkBoxIsolines, SIGNAL(stateChanged(int)), this, SLOT(draw()));
     connect(ui.component1, SIGNAL(editingFinished()), this, SLOT(calculate_values()));
     connect(ui.component2, SIGNAL(editingFinished()), this, SLOT(calculate_values()));
+    connect(ui.buttonSaveSelection, SIGNAL(clicked()), this, SLOT(saveSelection()));
 
     srand(QTime::currentTime().elapsed());
 }
@@ -300,6 +301,8 @@ void MainWindow::generate()
 
     ui.component1->setMaximum(ui.selectionDimention->value());
     ui.component2->setMaximum(ui.selectionDimention->value());
+
+    selectionGenerated = true;
 }
 
 void MainWindow::generate__a__()
@@ -413,6 +416,7 @@ void MainWindow::load()
     generate__a__();
 
     inputDataLoaded = true;
+    selectionGenerated = false;
 }
 
 double MainWindow::plot_x(double x)
@@ -423,4 +427,52 @@ double MainWindow::plot_x(double x)
 double MainWindow::plot_y(double y)
 {
     return -y*static_cast<double>(ui.zoomY->value())*10.0;
+}
+
+void MainWindow::saveSelection()
+{
+    if (!inputDataLoaded)
+    {
+        QMessageBox::critical(this, tr("Input data not loaded"),
+                              tr("Input data not loaded!"),
+                              QMessageBox::Ok);
+        return;
+    }
+
+    if (!selectionGenerated)
+    {
+        QMessageBox::critical(this, tr("Selection doesn't generated"),
+                              tr("Selection doesn't generated!"),
+                              QMessageBox::Ok);
+        return;
+    }
+
+    if (x == NULL)
+        return;
+
+    QString filename = QFileDialog::getSaveFileName(this,
+                                                    "Choose file to save selection");
+
+    if (filename.isEmpty())
+        return;
+
+    //open file
+    std::fstream out;
+    out.open(filename.toAscii().data(), std::ios_base::out);
+    if (!out.is_open())
+        return;
+
+    out << m << std::endl;
+    out << selectionSize << std::endl;
+
+    for (int i = 0; i < selectionSize; ++i)
+    {
+        for (int j = 0; j < m; ++j)
+        {
+            out << x[i][j] << " ";
+        }
+        out << std::endl;
+    }
+
+    out.close();
 }
